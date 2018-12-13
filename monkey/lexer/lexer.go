@@ -3,14 +3,14 @@
 import "monkey/token"
 
 type Lexer struct {
-	input			string
-	position		int		// 入力における現在位置
-	readPosition	int		// これから読み込む位置
-	ch				byte	// 現在検査中の文字
+	input        string
+	position     int  // 入力における現在位置
+	readPosition int  // これから読み込む位置
+	ch           byte // 現在検査中の文字
 }
 
 func New(input string) *Lexer {
-	l := &Lexer{input : input}
+	l := &Lexer{input: input}
 	l.readChar()
 	return l
 }
@@ -22,23 +22,37 @@ func (l *Lexer) readChar() {
 		l.ch = l.input[l.readPosition]
 	}
 	l.position = l.readPosition
-	l.readPosition +=1
+	l.readPosition++
 }
 
 func (l *Lexer) NextToken() token.Token {
 	var tok token.Token
-	
+
 	l.skipWhitespace()
-	
+
 	switch l.ch {
 	case '=':
-		tok = newToken(token.ASSIGN, l.ch)
+		if l.peekChar() == '=' {
+			ch := l.ch
+			l.readChar()
+			literal := string(ch) + string(l.ch)
+			tok = token.Token{Type: token.EQ, Literal: literal}
+		} else {
+			tok = newToken(token.ASSIGN, l.ch)
+		}
 	case '+':
 		tok = newToken(token.PLUS, l.ch)
 	case '-':
 		tok = newToken(token.MINUS, l.ch)
 	case '!':
-		tok = newToken(token.BANG, l.ch)
+		if l.peekChar() == '=' {
+			ch := l.ch
+			l.readChar()
+			literal := string(ch) + string(l.ch)
+			tok = token.Token{Type: token.NOT_EQ, Literal: literal}
+		} else {
+			tok = newToken(token.BANG, l.ch)
+		}
 	case '/':
 		tok = newToken(token.SLASH, l.ch)
 	case '*':
@@ -75,7 +89,7 @@ func (l *Lexer) NextToken() token.Token {
 			tok = newToken(token.ILLEGAL, l.ch)
 		}
 	}
-	
+
 	l.readChar()
 	return tok
 }
@@ -112,4 +126,12 @@ func (l *Lexer) readNumber() string {
 
 func isDigit(ch byte) bool {
 	return '0' <= ch && ch <= '9'
+}
+
+func (l *Lexer) peekChar() byte {
+	if l.readPosition >= len(l.input) {
+		return 0
+	} else {
+		return l.input[l.readPosition]
+	}
 }
